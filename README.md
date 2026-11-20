@@ -1,5 +1,7 @@
 # Deploy and Host Ghost with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/ghost-6-publishing-platform-mysql-caddy?referralCode=20H68q)
+
 Ghost is an open-source publishing platform for blogs, newsletters and paid memberships. This community template runs Ghost 6 with MySQL 8 behind a Caddy proxy on Railway, creates the site owner for you, keeps images and themes on a volume and enables Ghost 6's social web (ActivityPub) routes.
 
 ## About Hosting Ghost
