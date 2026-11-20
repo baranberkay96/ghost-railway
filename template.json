@@ -1,0 +1,250 @@
+{
+  "name": "Ghost 6 Publishing Platform (MySQL, Caddy)",
+  "description": "Blogs, newsletters and paid memberships with Ghost 6, MySQL 8 and Caddy.",
+  "category": "CMS",
+  "tags": [
+    "ghost",
+    "blog",
+    "newsletter",
+    "publishing",
+    "membership",
+    "cms",
+    "mysql",
+    "activitypub"
+  ],
+  "image": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ghost.png",
+  "upstream": {
+    "repo": "TryGhost/Ghost",
+    "version": "v6.78.0",
+    "images": {
+      "ghost": "ghost:6.78.0-alpine@sha256:baa6dbff91a28ba36c526d1f6e761deb2efe3c238c630c3f318b62f258c2d76e (released 2026-11-17)",
+      "mysql": "mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b (as in TryGhost/ghost-docker compose.yml)",
+      "caddy": "caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0"
+    },
+    "checked": "2026-11-20"
+  },
+  "services": {
+    "Caddy": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/caddy.svg",
+      "source": {
+        "repo": "baranberkay96/ghost-railway",
+        "rootDirectory": "/services/caddy"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": "/caddy-health",
+      "healthcheckTimeout": 300,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": true,
+      "targetPort": 8080,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "PORT": {
+          "defaultValue": "8080",
+          "description": "Port Caddy listens on (public domain target and healthcheck).",
+          "required": false
+        },
+        "GHOST_UPSTREAM": {
+          "defaultValue": "${{Ghost.RAILWAY_PRIVATE_DOMAIN}}:2368",
+          "description": "Ghost on the private network.",
+          "required": false
+        },
+        "ACTIVITYPUB_TARGET": {
+          "defaultValue": "https://ap.ghost.org",
+          "description": "ActivityPub service for Ghost's social web features (Ghost's hosted service by default, as in the official Docker setup).",
+          "required": false
+        }
+      }
+    },
+    "Ghost": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ghost.png",
+      "source": {
+        "repo": "baranberkay96/ghost-railway",
+        "rootDirectory": "/services/ghost"
+      },
+      "startCommand": null,
+      "preDeployCommand": null,
+      "healthcheckPath": "/health",
+      "healthcheckTimeout": 900,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/ghost/content"
+      },
+      "variables": {
+        "url": {
+          "defaultValue": "https://${{Caddy.RAILWAY_PUBLIC_DOMAIN}}",
+          "description": "Public address of the site (the Caddy service's domain). Change it when you add a custom domain to Caddy.",
+          "required": false
+        },
+        "PORT": {
+          "defaultValue": "2369",
+          "description": "Healthcheck port of the start script (Ghost itself listens on server__port).",
+          "required": false
+        },
+        "server__host": {
+          "defaultValue": "::",
+          "description": "Ghost listens on IPv4 and IPv6 (Railway private network).",
+          "required": false
+        },
+        "server__port": {
+          "defaultValue": "2368",
+          "description": "Port Ghost listens on; Caddy proxies to it.",
+          "required": false
+        },
+        "GHOST_ADMIN_EMAIL": {
+          "defaultValue": "admin@example.com",
+          "description": "E-mail (login) of the site owner, created on the first start. Change it before deploying or later in Ghost Admin.",
+          "required": false
+        },
+        "GHOST_ADMIN_PASSWORD": {
+          "defaultValue": "${{secret(24, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Owner password (10+ characters, Ghost's rules). Generated; read it here to log in.",
+          "required": false
+        },
+        "GHOST_ADMIN_NAME": {
+          "defaultValue": "Admin",
+          "description": "Display name of the owner created on the first start.",
+          "required": false
+        },
+        "GHOST_SITE_TITLE": {
+          "defaultValue": "My Ghost Site",
+          "description": "Site title set on the first start (change it later in Settings).",
+          "required": false
+        },
+        "GHOST_RESET_OWNER_PASSWORD": {
+          "defaultValue": "false",
+          "description": "true = on the next start, set the password of GHOST_ADMIN_EMAIL to GHOST_ADMIN_PASSWORD. Set back to false afterwards.",
+          "required": false
+        },
+        "database__client": {
+          "defaultValue": "mysql",
+          "description": "Ghost's supported production database.",
+          "required": false
+        },
+        "database__connection__host": {
+          "defaultValue": "${{MySQL.MYSQLHOST}}",
+          "description": "MySQL host on the private network.",
+          "required": false
+        },
+        "database__connection__port": {
+          "defaultValue": "${{MySQL.MYSQLPORT}}",
+          "description": "MySQL port.",
+          "required": false
+        },
+        "database__connection__user": {
+          "defaultValue": "${{MySQL.MYSQLUSER}}",
+          "description": "MySQL user for Ghost.",
+          "required": false
+        },
+        "database__connection__password": {
+          "defaultValue": "${{MySQL.MYSQLPASSWORD}}",
+          "description": "MySQL password (generated by the MySQL service).",
+          "required": false
+        },
+        "database__connection__database": {
+          "defaultValue": "${{MySQL.MYSQLDATABASE}}",
+          "description": "MySQL database. Ghost creates and migrates its tables on start.",
+          "required": false
+        },
+        "security__staffDeviceVerification": {
+          "defaultValue": "false",
+          "description": "Ghost e-mails a code when staff log in from a new device. Off because Railway SMTP needs Pro; set true once mail works.",
+          "required": false
+        },
+        "logging__transports": {
+          "defaultValue": "[\"stdout\"]",
+          "description": "Log to Railway's log view only (no log files on the volume).",
+          "required": false
+        },
+        "NODE_ENV": {
+          "defaultValue": "production",
+          "description": "Ghost runs in production mode.",
+          "required": false
+        }
+      }
+    },
+    "MySQL": {
+      "icon": "https://devicons.railway.app/i/mysql.svg",
+      "source": {
+        "image": "mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+      },
+      "startCommand": "docker-entrypoint.sh mysqld --innodb-use-native-aio=0 --disable-log-bin --performance_schema=0 --innodb-buffer-pool-size=256M",
+      "preDeployCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "cronSchedule": null,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/mysql"
+      },
+      "variables": {
+        "MYSQL_ROOT_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Root password (generated).",
+          "required": false
+        },
+        "MYSQL_DATABASE": {
+          "defaultValue": "ghost",
+          "description": "Database created on the first start.",
+          "required": false
+        },
+        "MYSQL_USER": {
+          "defaultValue": "ghost",
+          "description": "User created on the first start with all rights on MYSQL_DATABASE.",
+          "required": false
+        },
+        "MYSQL_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Password of MYSQL_USER (generated).",
+          "required": false
+        },
+        "MYSQLHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Private hostname of this database.",
+          "required": false
+        },
+        "MYSQLPORT": {
+          "defaultValue": "3306",
+          "description": "MySQL port.",
+          "required": false
+        },
+        "MYSQLUSER": {
+          "defaultValue": "${{MYSQL_USER}}",
+          "description": "User for Ghost and Railway's Data tab.",
+          "required": false
+        },
+        "MYSQLPASSWORD": {
+          "defaultValue": "${{MYSQL_PASSWORD}}",
+          "description": "Password for Ghost and Railway's Data tab.",
+          "required": false
+        },
+        "MYSQLDATABASE": {
+          "defaultValue": "${{MYSQL_DATABASE}}",
+          "description": "Database for Ghost and Railway's Data tab.",
+          "required": false
+        },
+        "MYSQL_URL": {
+          "defaultValue": "mysql://${{MYSQL_USER}}:${{MYSQL_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:3306/${{MYSQL_DATABASE}}",
+          "description": "Private connection URL.",
+          "required": false
+        }
+      }
+    }
+  },
+  "buckets": []
+}

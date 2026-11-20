@@ -1,0 +1,63 @@
+# Public entry for Ghost on Railway (written for this template, MIT; routes
+# follow the official TryGhost/ghost-docker Caddy setup).
+#
+#   /caddy-health                       -> this proxy (Railway healthcheck)
+#   POST .../authentication/setup       -> refused (the template completes setup)
+#   /.ghost/activitypub/*, webfinger,
+#   nodeinfo                            -> ActivityPub service (ap.ghost.org by default)
+#   everything else                     -> Ghost on the private network
+{
+	admin off
+	persist_config off
+	auto_https off
+	servers {
+		# Railway's edge terminates TLS and sends X-Forwarded-* headers.
+		trusted_proxies static private_ranges 100.0.0.0/8
+	}
+}
+
+:{$PORT} {
+	encode zstd gzip
+
+	handle /caddy-health {
+		respond "ok" 200
+	}
+
+	# Ghost's first-run setup creates the owner account. The Ghost service
+	# completes it over the private network; nobody can claim it from here.
+	# Express routes are case-insensitive and Ghost accepts optional version
+	# segments, so match generously.
+	@setup {
+		path_regexp setup (?i)^/+ghost/+api/+(v[0-9.]+/+)?admin/+authentication/+setup
+		not method GET HEAD
+	}
+	handle @setup {
+		respond "Ghost setup is completed by the Railway template. Log in with GHOST_ADMIN_EMAIL." 403
+	}
+
+	handle /.ghost/activitypub/* {
+		reverse_proxy {$ACTIVITYPUB_TARGET}
+	}
+	handle /.well-known/webfinger {
+		reverse_proxy {$ACTIVITYPUB_TARGET}
+	}
+	handle /.well-known/nodeinfo {
+		reverse_proxy {$ACTIVITYPUB_TARGET}
+	}
+
+	handle {
+		reverse_proxy {$GHOST_UPSTREAM} {
+			# Railway always serves HTTPS to visitors; Ghost redirects http requests.
+			header_up X-Forwarded-Proto https
+			lb_try_duration 30s
+			lb_try_interval 1s
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
